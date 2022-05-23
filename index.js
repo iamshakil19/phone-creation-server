@@ -16,8 +16,10 @@ async function run() {
     try {
         await client.connect()
 
+        // all collection
         const partsCollection = client.db('assignment12').collection('parts')
         const reviewsCollection = client.db('assignment12').collection('reviews')
+        const ordersCollection = client.db('assignment12').collection('orders')
 
         // all get api
         app.get('/parts', async (req, res) => {
@@ -37,12 +39,18 @@ async function run() {
             res.send(reviews)
         })
 
-        
+
         // all post api
         app.post('/reviews', async (req, res) => {
             const newReviews = req.body;
             const result = await reviewsCollection.insertOne(newReviews);
             res.send(result);
+        })
+
+        app.post('/orders', async (req, res) => {
+            const newOrders = req.body;
+            const result = await ordersCollection.insertOne(newOrders)
+            res.send(result)
         })
 
 
