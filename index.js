@@ -35,8 +35,16 @@ async function run() {
         })
 
         app.get('/reviews', async (req, res) => {
-            const reviews = await (await reviewsCollection.find().toArray()).reverse()
+            const reviews = (await reviewsCollection.find().toArray()).reverse()
             res.send(reviews)
+        })
+
+        app.get('/myOrders', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const cursor = ordersCollection.find(query)
+            const myOrders = await cursor.toArray()
+            res.send(myOrders)
         })
 
 
@@ -50,6 +58,14 @@ async function run() {
         app.post('/orders', async (req, res) => {
             const newOrders = req.body;
             const result = await ordersCollection.insertOne(newOrders)
+            res.send(result)
+        })
+
+        // all delete api
+        app.delete('/myOrders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await ordersCollection.deleteOne(query)
             res.send(result)
         })
 
