@@ -17,12 +17,17 @@ async function run() {
         await client.connect()
 
         const partsCollection = client.db('assignment12').collection('parts')
-        const Collection = client.db('assignment12').collection('parts')
+        const reviewsCollection = client.db('assignment12').collection('reviews')
 
         // all get api
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find().toArray()
             res.send(parts)
+        })
+
+        app.get('/reviews', async (req, res) => {
+            const reviews = await (await reviewsCollection.find().toArray()).reverse()
+            res.send(reviews)
         })
 
 
