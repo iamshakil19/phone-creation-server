@@ -18,6 +18,7 @@ async function run() {
         await client.connect()
 
         // all collection
+        const userCollection = client.db('assignment12').collection('user')
         const partsCollection = client.db('assignment12').collection('parts')
         const reviewsCollection = client.db('assignment12').collection('reviews')
         const ordersCollection = client.db('assignment12').collection('orders')
@@ -69,7 +70,7 @@ async function run() {
             res.send(result)
         })
 
-        app.post('/create-payment-intent', async(req, res) => {
+        app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.body
             const amount = price * 100
             const paymentIntent = await stripe.paymentIntents.create({
@@ -89,8 +90,19 @@ async function run() {
         })
 
         // all put api
+        app.put('/user/:email', async (req, res) => {
+            const user = req.body
+            const email = req.params.email;
+            const filter = { email: email };
+            const options = { upsert: true }
 
-        
+            const updateDoc = {
+                $set: user,
+            }
+            const result = await userCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
+
 
 
     }
