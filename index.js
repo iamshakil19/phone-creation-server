@@ -1,5 +1,6 @@
 const express = require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
 const stripe = require('stripe')("sk_test_51L1AeqHfb8VoLvD9wkDKJ6BbEPBkhJtUouDuHb6hPR1jbPBfVjA41sQaCjQAihLzlhjzm6tivmNJ2slGO68s6H7m00K7WEcjF5")
 const app = express()
 const port = process.env.PORT || 5000;
@@ -12,6 +13,21 @@ app.use(express.json())
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dgfkb.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+function jwtToken(req, res, next) {
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+        return res.status(401).send({ message: 'UnAuthorized access' })
+    }
+    const token = authHeader.split(' ')[1]
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden access' })
+        }
+        req.decoded = decoded
+        next()
+    })
+}
 
 async function run() {
     try {
@@ -48,12 +64,18 @@ async function run() {
             res.send(singleOrder)
         })
 
-        app.get('/myOrders', async (req, res) => {
+        app.get('/myOrders', jwtToken, async (req, res) => {
             const email = req.query.email;
-            const query = { email: email };
-            const cursor = ordersCollection.find(query)
-            const myOrders = await cursor.toArray()
-            res.send(myOrders)
+            const decodedEmail = req.decoded.email;
+            if (email === decodedEmail) {
+                const query = { email: email };
+                const cursor = ordersCollection.find(query)
+                const myOrders = await cursor.toArray()
+                return res.send(myOrders)
+            }
+            else {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
         })
 
 
@@ -100,7 +122,8 @@ async function run() {
                 $set: user,
             }
             const result = await userCollection.updateOne(filter, updateDoc, options)
-            res.send(result)
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '7d' })
+            res.send({ result, token })
         })
 
 
