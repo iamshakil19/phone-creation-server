@@ -38,6 +38,7 @@ async function run() {
         const partsCollection = client.db('assignment12').collection('parts')
         const reviewsCollection = client.db('assignment12').collection('reviews')
         const ordersCollection = client.db('assignment12').collection('orders')
+        const paymentsCollection = client.db('assignment12').collection('payments')
 
         // all get api
         app.get('/parts', async (req, res) => {
@@ -78,6 +79,11 @@ async function run() {
             }
         })
 
+        app.get('/user', jwtToken, async (req, res) => {
+            const users = await userCollection.find().toArray()
+            res.send(users)
+        })
+
 
         // all post api
         app.post('/reviews', async (req, res) => {
@@ -93,13 +99,15 @@ async function run() {
         })
 
         app.post('/create-payment-intent', async (req, res) => {
-            const { price } = req.body
-            const amount = price * 100
+            const { totalCost } = req.body
+            const amount = parseInt(totalCost) * 100
+            console.log(amount, totalCost);
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: 'usd',
                 payment_method_types: ['card']
             })
+            console.log({ clientSecret: paymentIntent.client_secret })
             res.send({ clientSecret: paymentIntent.client_secret })
         })
 
@@ -124,6 +132,24 @@ async function run() {
             const result = await userCollection.updateOne(filter, updateDoc, options)
             const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '7d' })
             res.send({ result, token })
+        })
+
+        // all patch api
+        app.patch('/myOrders/:id', jwtToken, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+
+            const updatedOrder = await ordersCollection.updateOne(filter, updatedDoc)
+
+            const result = await paymentsCollection.insertOne(payment)
+            res.send(updatedDoc);
         })
 
 
