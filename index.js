@@ -84,6 +84,13 @@ async function run() {
             res.send(users)
         })
 
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await userCollection.findOne({email: email})
+            const isAdmin = user.role === 'admin';
+            res.send({admin: isAdmin})
+        })
+
 
         // all post api
         app.post('/reviews', async (req, res) => {
@@ -119,10 +126,17 @@ async function run() {
             res.send(result)
         })
 
+        app.delete('/user/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+        })
+
         // all put api
         app.put('/user/:email', async (req, res) => {
-            const user = req.body
             const email = req.params.email;
+            const user = req.body
             const filter = { email: email };
             const options = { upsert: true }
 
@@ -132,6 +146,24 @@ async function run() {
             const result = await userCollection.updateOne(filter, updateDoc, options)
             const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '7d' })
             res.send({ result, token })
+        })
+
+        app.put('/user/admin/:email', jwtToken, async (req, res) => {
+            const email = req.params.email;
+            const requester = req.decoded.email
+            const requesterAccount = await userCollection.findOne({ email: requester })
+            if (requesterAccount.role === "admin") {
+                const filter = { email: email };
+                const updateDoc = {
+                    $set: { role: 'admin' },
+                }
+                const result = await userCollection.updateOne(filter, updateDoc)
+                res.send(result)
+            }
+            else{
+                res.status(403).send({message: 'forbidden access'})
+            }
+
         })
 
         // all patch api
