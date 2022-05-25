@@ -42,7 +42,7 @@ async function run() {
 
         // all get api
         app.get('/parts', async (req, res) => {
-            const parts = await partsCollection.find().toArray()
+            const parts = (await partsCollection.find().toArray()).reverse()
             res.send(parts)
         })
 
@@ -96,6 +96,12 @@ async function run() {
         app.post('/reviews', async (req, res) => {
             const newReviews = req.body;
             const result = await reviewsCollection.insertOne(newReviews);
+            res.send(result);
+        })
+
+        app.post('/parts', async (req, res) => {
+            const newParts = req.body;
+            const result = await partsCollection.insertOne(newParts);
             res.send(result);
         })
 
